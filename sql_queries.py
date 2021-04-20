@@ -16,7 +16,6 @@ artist_table_drop = "DROP TABLE IF EXISTS artists;"
 time_table_drop = "DROP TABLE IF EXISTS time;"
 
 # CREATE TABLES
-# TODO make redshift compatible
 staging_events_table_create= ("""
 CREATE UNLOGGED TABLE event_staging (
 id IDENTITY(0, 1),
@@ -38,7 +37,7 @@ month INT,
 year INT,
 weekday BOOLEAN);
 """)
-# TODO make redshift compatible
+
 staging_songs_table_create = ("""
 CREATE UNLOGGED TABLE song_staging (
 id IDENTITY(0, 1),
