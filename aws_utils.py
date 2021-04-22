@@ -205,3 +205,112 @@ def view_jsonpath_file():
                 .get_object(Bucket='udacity-dend',
                             Key='log_json_path.json'))
     return json.loads(jsonpath['Body'].read())
+
+
+# IAM role creation
+def create_redshift_role(role_name, tags):
+    """Create an IAM role that can be assumed by redshift.
+
+    Tag with the name of your project, e.g. ['udacity-dend-project-3']
+
+    :param role_name: string, name of the role
+    :param tags: list of strings, tags for he role
+    :returns: response to iam create_role method
+
+    """
+    policy = {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Effect": "Allow",
+                "Action": "sts:AssumeRole",
+                "Principal": {
+                    "Service": "redshift.amazonaws.com"
+                }
+            }
+        ]
+    }
+    iam = get_client('iam')
+    response = iam.create_role(
+        RoleName = role_name,
+        AssumeRolePolicyDocument = json.dumps(policy),
+        Description = "Allow s3 read-only access for Redshift",
+        Tags = tags
+    )
+    return response
+
+
+def allow_read_access(role_name):
+    """Adds s3 read access and redshift admin access to role.
+
+    :param role_name: string, name of role to modify
+    :returns: response to iam put_role_policy method
+
+    """
+    policy = {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Effect": "Allow",
+                "Action": [
+                    "s3:Get*",
+                    "s3:List*"
+                ],
+                "Resource": "*"
+            },
+            {
+                "Effect": "Allow",
+                "Action": [
+                    "redshift:*"
+                ],
+                "Resource": "arn:aws:redshift:::*"
+            }
+        ]
+    }
+    iam = get_client('iam')
+    response = iam.put_role_policy(
+        RoleName = role_name,
+        PolicyName = "s3ReadRedshiftAllAccess",
+        PolicyDocument = json.dumps(policy)
+    )
+    return response
+
+
+def get_role_arn(role_name):
+    """Return the arn of iam role 'role_name'
+
+    :param role_name: friendly name of iam role, string
+    :returns: arn of iam role
+
+    """
+    iam = get_client('iam')
+    response = iam.get_role(RoleName=role_name)
+    return response['Role']['Arn']
+
+
+def delete_role(role_name):
+    """Delete an IAM role.
+
+    TODO implement
+
+    Needs to remove policies before deleting.
+    Need policy ARNs to do so.
+
+    :returns:
+
+    """
+    pass
+
+
+# Redshift cluster management:
+# - create_cluster: create a redshift cluster using dwh.cfg
+# - pause_cluster: pause the cluster
+# - resume_cluster: resume the cluster
+# - cluster_properties:
+# - print_cluster_info: print basic info, including cluster status
+
+# PostgreSQL functions:
+# - get_connection: returns a connection to the DB on our cluster
+# - create_table: create a table, with handling for duplicate tables
+# - execute: execute a query
+# - recent_errors: print 10 most recent errors
