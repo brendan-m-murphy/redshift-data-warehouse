@@ -1,5 +1,5 @@
 # aws_utils.py
-#!/home/brendan/miniconda3/envs/ml/bin/python3
+#!/usr/bin/env python3
 """Functions for creating and interacting with aws resources.
 
 This is a collection of functions that will be used to create
@@ -40,9 +40,11 @@ PostgreSQL functions:
 
 """
 import boto3
+import botocore
 import configparser
 import io
 import json
+from mypy_boto3_cloudformation.client import BotocoreClientError
 import psycopg2
 import re
 
@@ -78,11 +80,11 @@ def get_cluster_config():
                 DB_NAME=config.get("CLUSTER","DB_NAME"),
                 DB_USER=config.get("CLUSTER","DB_USER"),
                 DB_PASSWORD=config.get("CLUSTER","DB_PASSWORD"),
-                PORT=config.get("CLUSTER","PORT"),
+                PORT=config.get("CLUSTER","DB_PORT"),
                 IAM_ROLE_NAME=config.get("IAM_ROLE", "NAME"))
 
 
-def get_s3():
+def get_s3_config():
     """Extract s3 bucket paths from 'dwh.cfg'
 
     :returns: Dict containing paths for s3 buckets and JSONPath files
@@ -94,6 +96,18 @@ def get_s3():
     return dict(LOG_DATA = config.get("S3", "LOG_DATA"),
                 LOG_JSONPATH = config.get("S3", "LOG_JSONPATH"),
                 SONG_DATA = config.get("S3", "SONG_DATA"))
+
+
+def get_role_name_arn():
+    """Return redshift role name and arn.
+
+    :returns: 2-tuple of strings: iam role name, iam role arn
+
+    """
+    config = configparser.ConfigParser()
+    config.read_file(open('dwh.cfg'))
+
+    return config.get("IAM_ROLE", "NAME"), config.get("IAM_ROLE", "ARN")
 
 
 def get_session():
@@ -208,13 +222,11 @@ def view_jsonpath_file():
 
 
 # IAM role creation
-def create_redshift_role(role_name, tags):
+def create_redshift_role(role_name):
     """Create an IAM role that can be assumed by redshift.
 
-    Tag with the name of your project, e.g. ['udacity-dend-project-3']
 
     :param role_name: string, name of the role
-    :param tags: list of strings, tags for he role
     :returns: response to iam create_role method
 
     """
@@ -231,13 +243,16 @@ def create_redshift_role(role_name, tags):
         ]
     }
     iam = get_client('iam')
-    response = iam.create_role(
-        RoleName = role_name,
-        AssumeRolePolicyDocument = json.dumps(policy),
-        Description = "Allow s3 read-only access for Redshift",
-        Tags = tags
-    )
-    return response
+    try:
+        response = iam.create_role(
+            RoleName = role_name,
+            AssumeRolePolicyDocument = json.dumps(policy),
+            Description = "Allow s3 read-only access for Redshift"
+        )
+    except iam.exceptions.EntityAlreadyExistsException:
+        print(f"IAM role {role_name} already exists.")
+    else:
+        return response
 
 
 def allow_read_access(role_name):
@@ -276,16 +291,20 @@ def allow_read_access(role_name):
     return response
 
 
-def get_role_arn(role_name):
-    """Return the arn of iam role 'role_name'
+def write_role_arn_to_cfg(role_name):
+    """Writes the arn of role_name to dwh.cfg
 
-    :param role_name: friendly name of iam role, string
-    :returns: arn of iam role
+    :param role_name: name of the IAM role
 
     """
     iam = get_client('iam')
     response = iam.get_role(RoleName=role_name)
-    return response['Role']['Arn']
+    arn = response['Role']['Arn']
+
+    config = configparser.ConfigParser()
+    config.set('IAM_ROLE', 'ARN', arn)
+    with open('dwh.cfg', 'w') as f:
+        config.write(f)
 
 
 def delete_role(role_name):
@@ -302,15 +321,232 @@ def delete_role(role_name):
     pass
 
 
-# Redshift cluster management:
-# - create_cluster: create a redshift cluster using dwh.cfg
-# - pause_cluster: pause the cluster
-# - resume_cluster: resume the cluster
-# - cluster_properties:
-# - print_cluster_info: print basic info, including cluster status
+# Redshift cluster management
+def create_cluster():
+    """Create a redshift cluster based on info in dwh.cfg
+
+    :returns: response to redshift client create_cluster method
+
+    """
+    client = get_client('redshift')
+    config = get_cluster_config()
+    _, arn = get_role_name_arn()
+
+    if not arn:
+        raise Exception("create_cluster exited: IAM role ARN empty.")
+
+    response = client.create_cluster(
+        DBName = config['DB_NAME'],
+        ClusterIdentifier = config['CLUSTER_IDENTIFIER'],
+        ClusterType = config['CLUSTER_TYPE'],
+        NodeType = config['NODE_TYPE'],
+        MasterUsername = config['DB_USER'],
+        MasterUserPassword = config['DB_PASSWORD'],
+        Port = int(config['DB_PORT']),
+        NumberOfNodes = int(config['NUM_NODES']),
+        IamRoles = [arn]
+    )
+    return response
+
+
+def redshift_properties():
+    """Return description of redshift cluster
+
+    :returns: description of redshift cluster
+
+    """
+    client = get_client('redshift')
+    ci = get_cluster_config()['CLUSTER_IDENTIFIER']
+    return client.describe_clusters(ClusterIdentifier=ci)['Clusters'][0]
+
+
+def print_redshift_properties():
+    """Prints basic info about redshift cluster
+
+    :returns: None
+
+    """
+    keys = ['ClusterIdentifier', 'NodeType', 'ClusterStatus',
+                'MasterUsername', 'DBName', 'Endpoint',
+                'NumberOfNodes', 'VpcId']
+    properties = redshift_properties()
+    print('\nCluster properties:\n')
+    for k in keys:
+        print(f'{k:<20}{properties[k]}')
+
+
+def pause_cluster():
+    "Pause redshift cluster"
+    client = get_client('redshift')
+    ci = get_config()["CLUSTER_IDENTIFIER"]
+    response = client.pause_cluster(ClusterIdentifier=ci)
+    return response
+
+
+def resume_cluster():
+    "Resume paused redshift cluster"
+    client = get_client('redshift')
+    ci = get_config()["CLUSTER_IDENTIFIER"]
+    response = client.resume_cluster(ClusterIdentifier=ci)
+    return response
+
+
+def write_cluster_host_to_cfg():
+    """Write the cluster endpoint address to HOST in dwh.cfg
+    """
+    host = redshift_properties()['Endpoint']['Address']
+
+    config = configparser.ConfigParser()
+    config.read_file(open('dwh.cfg'))
+    config.set('CLUSTER', 'HOST', host)
+
+
+
+def open_tpc():
+    """Open an incoming TCP port to access the cluster endpoint
+
+    :returns: None
+
+    """
+    ec2 = get_resource('ec2')
+    vpc_id = redshift_properties()['VpcId']
+    vpc = ec2.Vpc(id=vpc_id)
+    default_sg = list(vpc.security_groups.all())[0]
+    PORT = get_cluster_config()['PORT']
+
+    default_sg.authorize_ingress(
+        GroupName = default_sg.group_name,
+        CidrIp = "0.0.0.0/0",
+        IpProtocol = "TCP",
+        FromPort = int(PORT),
+        ToPort = int(PORT)
+    )
+
 
 # PostgreSQL functions:
-# - get_connection: returns a connection to the DB on our cluster
-# - create_table: create a table, with handling for duplicate tables
-# - execute: execute a query
-# - recent_errors: print 10 most recent errors
+def get_connection():
+    """Get connection to Postgres database on Redshift cluster
+
+    :returns: a psycopg2 connection to DB
+
+    """
+    config = get_cluster_config()
+    conn = psycopg2.connect(
+        dbname = config['DB_NAME'],
+        user = config['DB_USER'],
+        password = config['DB_PASSWORD'],
+        host = config['HOST'],
+        port = config['PORT']
+    )
+    return conn
+
+
+def create_table(query):
+    """Creates a table according to the passed query.
+
+    :param query: str, PostgreSQL create table query
+
+    """
+    conn = get_connection()
+    cur = conn.cursor()
+    try:
+        cur.execute(query)
+    except psycopg2.Error as e:
+        if e.pgcode == "42P07":
+            print("Table already exists:", e)
+        else:
+            raise
+    else:
+        conn.commit()
+    finally:
+        cur.close()
+        conn.close()
+
+
+# def parallel_copy():
+#     """Copy prefix partitioned files from s3 bucket to postgres table.
+
+#     :returns: None
+
+#     """
+#     _, IAM_ROLE_ARN = get_role_name_arn()
+#     query = f"""
+#     COPY sporting_event_ticket
+#     FROM 's3://udacity-labs/tickets/split/part'
+#     CREDENTIALS 'aws_iam_role={IAM_ROLE_ARN}'
+#     GZIP
+#     DELIMITER ';'
+#     COMPUPDATE OFF
+#     REGION 'us-west-2';
+#     """
+#     with get_connection() as conn:
+#         with conn.cursor() as cur:
+#             cur.execute(query)
+
+
+def check_load_errors():
+    """Print last 10 load errors from stl_load_errors, with detailed info
+
+    :returns: None
+
+    """
+    query = """
+    SELECT le.starttime, d.query, d.line_number, d.colname, d.value, le.err_reason
+    FROM stl_loaderror_detail AS d
+    JOIN stl_load_errors AS le ON d.query = le.query
+    ORDER BY le.starttime DESC
+    LIMIT 10;
+    """
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(query)
+            for item in cur.fetchall():
+                print(item)
+
+
+# Infrastructure set-up
+def main():
+    # create role
+    print('* Creating redshift role')
+    role_name, _ = get_role_name_arn()
+    create_redshift_role(role_name)
+
+
+    iam_client = get_client('iam')
+    create_role_waiter = iam_client.get_waiter('role_exists')
+    create_role_waiter.wait(RoleName=role_name)
+
+    # record arn
+    print('* Recording role arn')
+    write_role_arn_to_cfg(role_name)
+    _, role_arn = get_role_name_arn()
+    assert role_arn is not ""
+
+    # attach policies
+    print('* Attaching s3 read access policy')
+    allow_read_access(role_name)
+    # TODO waiter only works for managed policies... consider changing allow_read_access
+    # policy_waiter = iam_client.get_waiter('policy_exists')
+    # policy_waiter.wait()
+
+    # launch redshift cluster
+    print('* Launching Redshift cluster')
+    create_cluster()
+    redshift_client = get_client('redshift')
+    cluster_waiter = redshift_client.get_waiter('cluster_available')
+    ci = get_cluster_config()['CLUSTER_IDENTIFIER']
+    cluster_waiter.wait(ClusterIdentifier=ci)
+
+    # record endpoint
+    print('* Recording cluster endpoint')
+    write_cluster_host_to_cfg()
+
+    # open TCP connection
+    print('* Opening TCP connection')
+    open_tpc()
+
+    print('* Infrastructure complete!')
+
+
+if __name__ == '__main__':
+    main()
