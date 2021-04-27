@@ -196,7 +196,7 @@ def get_log_data(year=2018, month=11, num=5):
 
 
 def parse_log_object(obj):
-    """Returns list of JSON objects stored in a s3 object.#!/usr/bin/env python
+    """Returns list of JSON objects stored in a s3 object.
 
     The built-it JSON parser doesn't like files containing JSON objects separated
     by newlines, which is how our log files are stored.
@@ -262,31 +262,10 @@ def allow_read_access(role_name):
     :returns: response to iam put_role_policy method
 
     """
-    policy = {
-        "Version": "2012-10-17",
-        "Statement": [
-            {
-                "Effect": "Allow",
-                "Action": [
-                    "s3:Get*",
-                    "s3:List*"
-                ],
-                "Resource": "*"
-            },
-            {
-                "Effect": "Allow",
-                "Action": [
-                    "redshift:*"
-                ],
-                "Resource": "arn:aws:redshift:::*"
-            }
-        ]
-    }
     iam = get_client('iam')
-    response = iam.put_role_policy(
+    response = iam.attach_role_policy(
         RoleName = role_name,
-        PolicyName = "s3ReadRedshiftAllAccess",
-        PolicyDocument = json.dumps(policy)
+        PolicyArn = "arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess"
     )
     return response
 
@@ -343,7 +322,7 @@ def create_cluster():
         NodeType = config['NODE_TYPE'],
         MasterUsername = config['DB_USER'],
         MasterUserPassword = config['DB_PASSWORD'],
-        Port = int(config['DB_PORT']),
+        Port = int(config['PORT']),
         NumberOfNodes = int(config['NUM_NODES']),
         IamRoles = [arn]
     )
@@ -379,15 +358,26 @@ def print_redshift_properties():
 def pause_cluster():
     "Pause redshift cluster"
     client = get_client('redshift')
-    ci = get_config()["CLUSTER_IDENTIFIER"]
-    response = client.pause_cluster(ClusterIdentifier=ci)
+    ci = get_cluster_config()["CLUSTER_IDENTIFIER"]
+    try:
+        response = client.pause_cluster(ClusterIdentifier=ci)
+    except client.exceptions.InvalidClusterStateFound:
+        print('Cluster cannot be paused because no recent backup found.\nCreating a snapshot...')
+        client.create_cluster_snapshot(SnapshotIdentifier="pause-cluster-snap",
+                                       ClusterIdentifier=ci)
+        print("Waiting for snapshot. This could take up to 5 minutes.")
+        waiter = client.get_waiter('snapshot_available')
+        waiter.wait(SnapshotIdentifier="pause-cluster-snap",
+                    ClusterIdentifier=ci)
+        print("Snapshot ready. Pausing...")
+        response = client.pause_cluster(ClusterIdentifier=ci)
     return response
 
 
 def resume_cluster():
     "Resume paused redshift cluster"
     client = get_client('redshift')
-    ci = get_config()["CLUSTER_IDENTIFIER"]
+    ci = get_cluster_config()["CLUSTER_IDENTIFIER"]
     response = client.resume_cluster(ClusterIdentifier=ci)
     return response
 
@@ -527,7 +517,6 @@ def main():
     # attach policies
     print('* Attaching s3 read access policy')
     allow_read_access(role_name)
-    # TODO waiter only works for managed policies... consider changing allow_read_access
     # policy_waiter = iam_client.get_waiter('policy_exists')
     # policy_waiter.wait()
 
