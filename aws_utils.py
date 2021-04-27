@@ -302,6 +302,7 @@ def write_role_arn_to_cfg(role_name):
     arn = response['Role']['Arn']
 
     config = configparser.ConfigParser()
+    config.read('dwh.cfg')
     config.set('IAM_ROLE', 'ARN', arn)
     with open('dwh.cfg', 'w') as f:
         config.write(f)
@@ -397,8 +398,10 @@ def write_cluster_host_to_cfg():
     host = redshift_properties()['Endpoint']['Address']
 
     config = configparser.ConfigParser()
-    config.read_file(open('dwh.cfg'))
+    config.read('dwh.cfg')
     config.set('CLUSTER', 'HOST', host)
+    with open('dwh.cfg', 'w') as f:
+            config.write(f)
 
 
 
@@ -520,7 +523,6 @@ def main():
     print('* Recording role arn')
     write_role_arn_to_cfg(role_name)
     _, role_arn = get_role_name_arn()
-    assert role_arn is not ""
 
     # attach policies
     print('* Attaching s3 read access policy')
