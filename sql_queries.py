@@ -19,37 +19,39 @@ time_table_drop = "DROP TABLE IF EXISTS time;"
 staging_events_table_create= ("""
 CREATE UNLOGGED TABLE event_staging (
 id IDENTITY(0, 1),
-song TEXT,
 artist TEXT,
-userId TEXT,
+auth TEXT,
 firstName TEXT,
-lastName TEXT,
 gender TEXT,
+itemInSession INT,
+lastName TEXT,
+length DECIMAL,
 level TEXT,
-sessionId TEXT,
 location TEXT,
-userAgent TEXT,
+method TEXT,
+page TEXT,
+registration DECIMAL,
+sessionId TEXT,
+song TEXT,
+status TEXT,
 ts TIMESTAMP,
-hour INT,
-day INT,
-week INT,
-month INT,
-year INT,
-weekday BOOLEAN);
+userAgent TEXT,
+userId TEXT);
 """)
 
 staging_songs_table_create = ("""
 CREATE UNLOGGED TABLE song_staging (
 id IDENTITY(0, 1),
-artist_id TEXT,
-artist_name TEXT,
-artist_location TEXT,
-artist_latitude DECIMAL,
-artist_longitude DECIMAL,
 song_id TEXT,
+num_songs INT,
 title TEXT,
+artist_name TEXT,
+artist_latitude DECIMAL,
 year INTEGER,
-duration DECIMAL);
+duration DECIMAL,
+artist_id TEXT,
+artist_longitude DECIMAL,
+artist_location TEXT);
 """)
 
 songplay_table_create = ("""
@@ -111,6 +113,7 @@ time_table_create = ("""
 # STAGING TABLES
 
 staging_events_copy = ("""
+
 """).format()
 
 staging_songs_copy = ("""
