@@ -1,9 +1,14 @@
 import configparser
+import aws_utils
 
 
 # CONFIG
-config = configparser.ConfigParser()
-config.read('dwh.cfg')
+config = aws_utils.get_s3_config()
+LOG_DATA = config['LOG_DATA']
+LOG_JSONPATH = config['LOG_JSONPATH']
+SONG_DATA = config['SONG_DATA']
+
+_, IAM_ARN = aws_utils.get_role_name_arn()
 
 # DROP TABLES
 
@@ -112,12 +117,19 @@ time_table_create = ("""
 
 # STAGING TABLES
 
-staging_events_copy = ("""
+staging_events_copy = (f"""
+COPY event_staging
+FROM '{LOG_DATA}'
+IAM_ROLE '{IAM_ARN}'
+JSON '{LOG_JSONPATH}';
+""")
 
-""").format()
-
-staging_songs_copy = ("""
-""").format()
+staging_songs_copy = (f"""
+COPY song_staging
+FROM '{SONG_DATA}'
+IAM_ROLE '{IAM_ARN}'
+JSON 'auto';
+""")
 
 # FINAL TABLES
 
