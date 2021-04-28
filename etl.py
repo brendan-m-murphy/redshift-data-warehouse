@@ -1,5 +1,5 @@
-import configparser
 import psycopg2
+import aws_utils
 from sql_queries import copy_table_queries, insert_table_queries
 
 
@@ -16,16 +16,10 @@ def insert_tables(cur, conn):
 
 
 def main():
-    config = configparser.ConfigParser()
-    config.read('dwh.cfg')
-
-    conn = psycopg2.connect("host={} dbname={} user={} password={} port={}".format(*config['CLUSTER'].values()))
-    cur = conn.cursor()
-    
-    load_staging_tables(cur, conn)
-    insert_tables(cur, conn)
-
-    conn.close()
+    with aws_utils.get_connection() as conn:
+        with conn.cursor() as cur:
+            load_staging_tables(cur, conn)
+            insert_tables(cur, conn)
 
 
 if __name__ == "__main__":

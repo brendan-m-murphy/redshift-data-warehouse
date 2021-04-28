@@ -22,8 +22,8 @@ time_table_drop = "DROP TABLE IF EXISTS time;"
 
 # CREATE TABLES
 staging_events_table_create= ("""
-CREATE UNLOGGED TABLE event_staging (
-id IDENTITY(0, 1),
+CREATE TABLE event_staging (
+id BIGINT IDENTITY(0, 1),
 artist TEXT,
 auth TEXT,
 firstName TEXT,
@@ -45,8 +45,8 @@ userId TEXT);
 """)
 
 staging_songs_table_create = ("""
-CREATE UNLOGGED TABLE song_staging (
-id IDENTITY(0, 1),
+CREATE TABLE song_staging (
+id BIGINT IDENTITY(0, 1),
 song_id TEXT,
 num_songs INT,
 title TEXT,
@@ -61,7 +61,7 @@ artist_location TEXT);
 
 songplay_table_create = ("""
                          CREATE TABLE IF NOT EXISTS songplays (
-                             songplay_id serial PRIMARY KEY,
+                             songplay_id BIGINT IDENTITY(0,1) PRIMARY KEY,
                              start_time timestamp NOT NULL,
                              user_id integer NOT NULL,
                              level char(4),
@@ -119,14 +119,14 @@ time_table_create = ("""
 
 staging_events_copy = (f"""
 COPY event_staging
-FROM '{LOG_DATA}'
+FROM '{LOG_DATA + "2018/11/01"}'
 IAM_ROLE '{IAM_ARN}'
 JSON '{LOG_JSONPATH}';
 """)
 
 staging_songs_copy = (f"""
 COPY song_staging
-FROM '{SONG_DATA}'
+FROM '{SONG_DATA + "A/A/A"}'
 IAM_ROLE '{IAM_ARN}'
 JSON 'auto';
 """)

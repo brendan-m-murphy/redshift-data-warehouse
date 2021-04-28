@@ -81,7 +81,9 @@ def get_cluster_config():
                 DB_USER=config.get("CLUSTER","DB_USER"),
                 DB_PASSWORD=config.get("CLUSTER","DB_PASSWORD"),
                 PORT=config.get("CLUSTER","DB_PORT"),
+                HOST=config.get("CLUSTER", "HOST"),
                 IAM_ROLE_NAME=config.get("IAM_ROLE", "NAME"))
+
 
 
 def get_s3_config():
@@ -380,6 +382,20 @@ def resume_cluster():
     ci = get_cluster_config()["CLUSTER_IDENTIFIER"]
     response = client.resume_cluster(ClusterIdentifier=ci)
     return response
+
+
+def wait_for_cluster_available():
+    """Wait for the Redshift cluster to be available.
+
+    Use after creating the cluster or resuming the cluster to
+    ensure that the cluster is available before trying to access it.
+
+    """
+    redshift_client = get_client('redshift')
+    cluster_waiter = redshift_client.get_waiter('cluster_available')
+    ci = get_cluster_config()['CLUSTER_IDENTIFIER']
+    cluster_waiter.wait(ClusterIdentifier=ci)
+
 
 
 def write_cluster_host_to_cfg():

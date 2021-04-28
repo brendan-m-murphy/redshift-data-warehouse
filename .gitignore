@@ -1,2 +1,3 @@
 *.cfg
 *.org
+/__pycache__/
