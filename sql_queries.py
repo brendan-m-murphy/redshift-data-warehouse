@@ -119,14 +119,14 @@ time_table_create = ("""
 
 staging_events_copy = (f"""
 COPY event_staging
-FROM '{LOG_DATA + "2018/11/01"}'
+FROM '{LOG_DATA + "/2018/11/2018-11-01-events.json"}'
 IAM_ROLE '{IAM_ARN}'
 JSON '{LOG_JSONPATH}';
 """)
 
 staging_songs_copy = (f"""
 COPY song_staging
-FROM '{SONG_DATA + "A/A/A"}'
+FROM '{SONG_DATA + "/A/A/A"}'
 IAM_ROLE '{IAM_ARN}'
 JSON 'auto';
 """)
