@@ -165,10 +165,10 @@ def get_song_data(prefix=''):
                 .objects.filter(Prefix='song-data/' + prefix))
 
 
-def get_song_samples(n=5):
+def get_song_samples(prefix='A/A/A', n=5):
     samples = []
     client = get_client('s3')
-    for i, song in enumerate(get_song_data('A/A/A')):
+    for i, song in enumerate(get_song_data(prefix=prefix)):
         if i > n:
             break
         else:
@@ -474,25 +474,35 @@ def create_table(query):
         conn.close()
 
 
-# def parallel_copy():
-#     """Copy prefix partitioned files from s3 bucket to postgres table.
+def execute_print(query, limit=None, format=lambda x: x):
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(query)
+            if limit:
+                for i, x in enumerate(cur.fetchall()):
+                    if i > limit:
+                        break
+                    else:
+                        print(format(x))
+            else:
+                for x in cur.fetchall():
+                    print(format(x))
 
-#     :returns: None
 
-#     """
-#     _, IAM_ROLE_ARN = get_role_name_arn()
-#     query = f"""
-#     COPY sporting_event_ticket
-#     FROM 's3://udacity-labs/tickets/split/part'
-#     CREDENTIALS 'aws_iam_role={IAM_ROLE_ARN}'
-#     GZIP
-#     DELIMITER ';'
-#     COMPUPDATE OFF
-#     REGION 'us-west-2';
-#     """
-#     with get_connection() as conn:
-#         with conn.cursor() as cur:
-#             cur.execute(query)
+def print_load_errors():
+    def format(a, b, c, d ,e):
+        return f"{a:<8}{b:<23}{c:<7}{d:<19}{e:<50}"
+    print(format('query', 'file', 'line', 'value', 'err_reason'))
+    query = """
+    select d.query, substring(d.filename,14,20),
+    d.line_number as line,
+    substring(d.value,1,16) as value,
+    substring(le.err_reason,1,48) as err_reason
+    from stl_loaderror_detail d, stl_load_errors le
+    where d.query = le.query;
+    """
+    execute_print(query, format=lambda x: format(*tuple(x)))
+
 
 
 def check_load_errors():

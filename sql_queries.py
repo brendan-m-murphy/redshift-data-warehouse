@@ -127,7 +127,7 @@ JSON '{LOG_JSONPATH}';
 
 staging_songs_copy = (f"""
 COPY song_staging
-FROM '{SONG_DATA + "/A/A/A"}'
+FROM '{SONG_DATA + "/A"}'
 IAM_ROLE '{IAM_ARN}'
 JSON 'auto';
 """)

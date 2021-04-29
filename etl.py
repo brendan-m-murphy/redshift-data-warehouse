@@ -19,7 +19,7 @@ def main():
     with aws_utils.get_connection() as conn:
         with conn.cursor() as cur:
             load_staging_tables(cur, conn)
-#            insert_tables(cur, conn)
+            insert_tables(cur, conn)
 
 
 if __name__ == "__main__":
