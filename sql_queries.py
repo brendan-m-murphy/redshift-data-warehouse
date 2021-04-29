@@ -121,7 +121,6 @@ staging_events_copy = (f"""
 COPY event_staging
 FROM '{LOG_DATA + "/2018/11/2018-11-01-events.json"}'
 IAM_ROLE '{IAM_ARN}'
-NOLOAD
 TIMEFORMAT AS 'epochmillisecs'
 JSON '{LOG_JSONPATH}';
 """)
@@ -130,7 +129,6 @@ staging_songs_copy = (f"""
 COPY song_staging
 FROM '{SONG_DATA + "/A/A/A"}'
 IAM_ROLE '{IAM_ARN}'
-NOLOAD
 JSON 'auto';
 """)
 
@@ -144,8 +142,7 @@ SELECT e.ts, CAST(e.userId AS INT), e.level, s.song_id, s.artist_id,
   CAST(e.sessionId AS INTEGER), e.location, e.userAgent
 FROM event_staging as e
 JOIN song_staging as s
-ON e.song = s.title AND e.artist = s.artist_name
-ON CONFLICT DO NOTHING;
+ON e.song = s.title AND e.artist = s.artist_name;
 """
 
 user_table_insert = """
@@ -155,81 +152,28 @@ SELECT a, b, c, d, e FROM
    lastName AS c, gender AS d, level AS e,
    rank() OVER (PARTITION BY userId ORDER BY ts DESC) AS rnk
    FROM event_staging) as subquery
-WHERE rnk = 1
-ON CONFLICT (user_id)
-DO UPDATE SET (first_name, last_name, gender, level) =
-(EXCLUDED.first_name, EXCLUDED.last_name, EXCLUDED.gender, EXCLUDED.level);
+WHERE rnk = 1;
 """
 
 time_table_insert = """
 INSERT INTO time (start_time, hour, day, week, month, year, weekday)
-SELECT e.ts, e.hour, e.day, e.week,
-  e.month, e.year, e.weekday
-FROM event_staging as e
-ON CONFLICT DO NOTHING;
+SELECT ts, date_part(h, ts), date_part(d, ts), date_part(w, ts),
+date_part(mon, ts), date_part(y, ts), (CASE WHEN date_part(dow, ts) BETWEEN 1 AND 5 THEN true ELSE false END)
+FROM event_staging as e;
 """
 
 song_table_insert = """
 INSERT INTO songs (song_id, title, artist_id, year, duration)
 SELECT sstg.song_id, sstg.title, sstg.artist_id, sstg.year, sstg.duration
-FROM song_staging as sstg
-ON CONFLICT DO NOTHING;
+FROM song_staging as sstg;
 """
 
 artist_table_insert = """
 INSERT INTO artists (artist_id, name, location, latitude, longitude)
 SELECT sstg.artist_id, sstg.artist_name, sstg.artist_location,
   sstg.artist_latitude, sstg.artist_longitude
-FROM song_staging as sstg
-ON CONFLICT DO NOTHING;
+FROM song_staging as sstg;
 """
-
-# FOREIGN KEYS AND INDICES
-set_fk1 = ("""
-ALTER TABLE songplays
-ADD CONSTRAINT fk__songplays__time
-FOREIGN KEY (start_time)
-REFERENCES time
-ON DELETE RESTRICT ON UPDATE CASCADE;""")
-
-
-set_fk2 = ("""
-ALTER TABLE songplays
-ADD CONSTRAINT fk__songplays__users
-FOREIGN KEY (user_id)
-REFERENCES users
-ON DELETE RESTRICT ON UPDATE CASCADE;""")
-
-
-set_fk3 = ("""
-ALTER TABLE songplays
-ADD CONSTRAINT fk__songplays__songs
-FOREIGN KEY (song_id)
-REFERENCES songs
-ON DELETE RESTRICT ON UPDATE CASCADE;""")
-
-
-set_fk4 = ("""
-ALTER TABLE songplays
-ADD CONSTRAINT fk__songplays__artists
-FOREIGN KEY (artist_id)
-REFERENCES artists
-ON DELETE RESTRICT ON UPDATE CASCADE;""")
-
-
-set_fk5 = ("""
-ALTER TABLE songs
-ADD CONSTRAINT fk__songs__artists
-FOREIGN KEY (artist_id)
-REFERENCES artists
-ON DELETE RESTRICT ON UPDATE CASCADE;""")
-
-
-set_idx1 = "CREATE INDEX IF NOT EXISTS idx_start_time ON songplays (start_time);"
-set_idx2 = "CREATE INDEX IF NOT EXISTS idx_user_id ON songplays (user_id);"
-set_idx3 = "CREATE INDEX IF NOT EXISTS idx_song_id ON songplays (song_id);"
-set_idx4 = "CREATE INDEX IF NOT EXISTS idx_artist_id ON songplays (artist_id);"
-set_idx5 = "CREATE INDEX IF NOT EXISTS idx_artist_id ON songs (artist_id);"
 
 
 # QUERY LISTS
@@ -238,5 +182,3 @@ create_table_queries = [staging_events_table_create, staging_songs_table_create,
 drop_table_queries = [staging_events_table_drop, staging_songs_table_drop, songplay_table_drop, user_table_drop, song_table_drop, artist_table_drop, time_table_drop]
 copy_table_queries = [staging_events_copy, staging_songs_copy]
 insert_table_queries = [songplay_table_insert, user_table_insert, song_table_insert, artist_table_insert, time_table_insert]
-fk_queries = [set_fk1, set_fk2, set_fk3, set_fk4, set_fk5]
-idx_queries = [set_idx1, set_idx2, set_idx3, set_idx4, set_idx5]
