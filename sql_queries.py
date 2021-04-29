@@ -1,4 +1,3 @@
-import configparser
 import aws_utils
 
 
@@ -122,6 +121,7 @@ COPY event_staging
 FROM '{LOG_DATA + "/2018/11/2018-11-01-events.json"}'
 IAM_ROLE '{IAM_ARN}'
 TIMEFORMAT AS 'epochmillisecs'
+TRUNCATECOLUMNS
 JSON '{LOG_JSONPATH}';
 """)
 
@@ -129,6 +129,7 @@ staging_songs_copy = (f"""
 COPY song_staging
 FROM '{SONG_DATA + "/A"}'
 IAM_ROLE '{IAM_ARN}'
+TRUNCATECOLUMNS
 JSON 'auto';
 """)
 
@@ -142,7 +143,8 @@ SELECT e.ts, CAST(e.userId AS INT), e.level, s.song_id, s.artist_id,
   CAST(e.sessionId AS INTEGER), e.location, e.userAgent
 FROM event_staging as e
 JOIN song_staging as s
-ON e.song = s.title AND e.artist = s.artist_name;
+ON e.song = s.title AND e.artist = s.artist_nam
+WHERE e.page = 'NextSong';
 """
 
 user_table_insert = """
