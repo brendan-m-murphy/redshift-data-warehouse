@@ -394,7 +394,9 @@ def wait_for_cluster_available():
     redshift_client = get_client('redshift')
     cluster_waiter = redshift_client.get_waiter('cluster_available')
     ci = get_cluster_config()['CLUSTER_IDENTIFIER']
+    print("* Waiting for cluster")
     cluster_waiter.wait(ClusterIdentifier=ci)
+    print("* Cluster available")
 
 
 
