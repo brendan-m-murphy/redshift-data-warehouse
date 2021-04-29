@@ -143,7 +143,7 @@ SELECT e.ts, CAST(e.userId AS INT), e.level, s.song_id, s.artist_id,
   CAST(e.sessionId AS INTEGER), e.location, e.userAgent
 FROM event_staging as e
 JOIN song_staging as s
-ON e.song = s.title AND e.artist = s.artist_nam
+ON e.song = s.title AND e.artist = s.artist_name
 WHERE e.page = 'NextSong';
 """
 
