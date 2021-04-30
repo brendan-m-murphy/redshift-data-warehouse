@@ -1,3 +1,4 @@
 *.cfg
 *.org
 /__pycache__/
+/new_user_credentials.csv
