@@ -118,7 +118,7 @@ time_table_create = ("""
 
 staging_events_copy = (f"""
 COPY event_staging
-FROM '{LOG_DATA + "/2018/11/2018-11-01-events.json"}'
+FROM '{LOG_DATA}'
 IAM_ROLE '{IAM_ARN}'
 TIMEFORMAT AS 'epochmillisecs'
 TRUNCATECOLUMNS
@@ -126,6 +126,25 @@ JSON '{LOG_JSONPATH}';
 """)
 
 staging_songs_copy = (f"""
+COPY song_staging
+FROM '{SONG_DATA}'
+IAM_ROLE '{IAM_ARN}'
+TRUNCATECOLUMNS
+JSON 'auto';
+""")
+
+# TEST STAGING TABLES
+
+test_staging_events_copy = (f"""
+COPY event_staging
+FROM '{LOG_DATA + "/2018/11/2018-11-01-events.json"}'
+IAM_ROLE '{IAM_ARN}'
+TIMEFORMAT AS 'epochmillisecs'
+TRUNCATECOLUMNS
+JSON '{LOG_JSONPATH}';
+""")
+
+test_staging_songs_copy = (f"""
 COPY song_staging
 FROM '{SONG_DATA + "/A"}'
 IAM_ROLE '{IAM_ARN}'
@@ -159,20 +178,20 @@ WHERE rnk = 1;
 
 time_table_insert = """
 INSERT INTO time (start_time, hour, day, week, month, year, weekday)
-SELECT ts, date_part(h, ts), date_part(d, ts), date_part(w, ts),
+SELECT DISTINCT ts, date_part(h, ts), date_part(d, ts), date_part(w, ts),
 date_part(mon, ts), date_part(y, ts), (CASE WHEN date_part(dow, ts) BETWEEN 1 AND 5 THEN true ELSE false END)
 FROM event_staging as e;
 """
 
 song_table_insert = """
 INSERT INTO songs (song_id, title, artist_id, year, duration)
-SELECT sstg.song_id, sstg.title, sstg.artist_id, sstg.year, sstg.duration
+SELECT DISTINCT sstg.song_id, sstg.title, sstg.artist_id, sstg.year, sstg.duration
 FROM song_staging as sstg;
 """
 
 artist_table_insert = """
 INSERT INTO artists (artist_id, name, location, latitude, longitude)
-SELECT sstg.artist_id, sstg.artist_name, sstg.artist_location,
+SELECT DISTINCT sstg.artist_id, sstg.artist_name, sstg.artist_location,
   sstg.artist_latitude, sstg.artist_longitude
 FROM song_staging as sstg;
 """
@@ -183,4 +202,5 @@ FROM song_staging as sstg;
 create_table_queries = [staging_events_table_create, staging_songs_table_create, songplay_table_create, user_table_create, song_table_create, artist_table_create, time_table_create]
 drop_table_queries = [staging_events_table_drop, staging_songs_table_drop, songplay_table_drop, user_table_drop, song_table_drop, artist_table_drop, time_table_drop]
 copy_table_queries = [staging_events_copy, staging_songs_copy]
+test_copy_table_queries = [test_staging_events_copy, test_staging_songs_copy]
 insert_table_queries = [songplay_table_insert, user_table_insert, song_table_insert, artist_table_insert, time_table_insert]
