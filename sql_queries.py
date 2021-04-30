@@ -191,11 +191,25 @@ FROM song_staging as sstg;
 
 artist_table_insert = """
 INSERT INTO artists (artist_id, name, location, latitude, longitude)
-SELECT DISTINCT sstg.artist_id, sstg.artist_name, sstg.artist_location,
-  sstg.artist_latitude, sstg.artist_longitude
-FROM song_staging as sstg;
+SELECT a, b, c, d, e FROM
+(SELECT artist_id AS a, artist_name AS b, artist_location AS c,
+    artist_latitude AS d, artist_longitude AS e,
+    row_number() OVER (PARTITION BY artist_id) AS row_num
+    FROM song_staging) as subquery
+WHERE row_num = 1;
 """
 
+
+# TEST QUERIES
+
+# Return 1 if there are no duplicates
+max_artist_duplicates = """
+SELECT COUNT(*) as c
+FROM artists
+GROUP BY artist_id
+ORDER BY c DESC
+LIMIT 1;
+"""
 
 # QUERY LISTS
 
