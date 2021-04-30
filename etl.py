@@ -6,7 +6,7 @@ staging tables.
 
 Optional arguements:
 - `test`: run on restricted set of data
-- `y`: run on full set of data without prompt
+- `all`: run on full set of data without prompt
 
 If no optional arguments are present, you will
 be asked to confirm that you wish to load *all*
@@ -37,34 +37,40 @@ def test_load_staging_tables(cur, conn):
         conn.commit()
 
 
+def full_etl():
+    with aws_utils.get_connection() as conn:
+        with conn.cursor() as cur:
+            print('* Loading staging tables (all data)')
+            load_staging_tables(cur, conn)
+            print('* Populating star schema')
+            insert_tables(cur, conn)
+
+
+def test_etl():
+    with aws_utils.get_connection() as conn:
+        with conn.cursor() as cur:
+            print('* Loading staging tables (test data)')
+            test_load_staging_tables(cur, conn)
+            print('* Populating star schema')
+            insert_tables(cur, conn)
+
+
 def main(*args):
     if len(args) == 1:
         answer = input("Do you want to load all of the data, a test set, or quit? [all/test/quit] ")
         if answer == 'all':
-            with aws_utils.get_connection() as conn:
-                with conn.cursor() as cur:
-                    load_staging_tables(cur, conn)
-                    insert_tables(cur, conn)
+            full_etl()
         elif answer == 'test':
-            with aws_utils.get_connection() as conn:
-                with conn.cursor() as cur:
-                    test_load_staging_tables(cur, conn)
-                    insert_tables(cur, conn)
+            test_etl()
     elif len(args) == 2:
-        if args[1] == 'y':
-            with aws_utils.get_connection() as conn:
-                with conn.cursor() as cur:
-                    load_staging_tables(cur, conn)
-                    insert_tables(cur, conn)
+        if args[1] == 'all':
+            full_etl()
         elif args[1] == 'test':
-            with aws_utils.get_connection() as conn:
-                with conn.cursor() as cur:
-                    test_load_staging_tables(cur, conn)
-                    insert_tables(cur, conn)
+            test_etl()
         else:
-            raise Exception("Invalid argument. Valid arguments are 'test' or 'y'.")
+            raise Exception("Invalid argument. Valid arguments are 'test' or 'all'.")
     else:
-        raise Exception("Too many arguments. Valid arguments are 'test' or 'y'.")
+        raise Exception("Too many arguments. Valid arguments are 'test' or 'all'.")
 
 
 
