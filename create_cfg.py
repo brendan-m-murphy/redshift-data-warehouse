@@ -21,18 +21,24 @@ import sys
 
 
 def main(*args):
-    if len(args) > 1:
-        outfile = args[1]
-    else:
-        outfile = 'dwh.cfg'
+    use_default = input("Use default parameters? [y/n] ")
+    while use_default not in ['y', 'n']:
+        use_default = input("Enter 'y' or 'n': ")
 
-    config = configparser.ConfigParser()
+    OUT_FILE = 'dwh.cfg'
+    CRED_FILE = 'new_user_credentials.csv'
+    for arg in args:
+        if arg.endswith('.cfg'):
+            OUT_FILE = arg
+        elif arg.endswith('.csv'):
+            CRED_FILE = arg
+
 
     # [AWS]
-    config['AWS'] = {}
-    aws = config['AWS']
+    aws = {'REGION': 'us-west-2'}
 
-    CRED_FILE = 'new_user_credentials.csv'
+    # read credentials from .csv file
+    # assuming default aws columns
     with open(CRED_FILE, 'r', newline='') as f:
         reader = csv.reader(f, delimiter=',')
         next(reader)
@@ -40,49 +46,62 @@ def main(*args):
         aws['KEY'] = row[2]
         aws['SECRET'] = row[3]
 
-    print("* Enter parameters, or hit return to accept default.")
-
-    x = input("Enter a AWS region (default 'us-west-2'): ")
-    aws['REGION'] = x or 'us-west-2'
-
 
     # [CLUSTER]
-    config['CLUSTER'] = {'CLUSTER_TYPE': 'multi-node',
-                         'NUM_NODES': '4',
-                         'NODE_TYPE': 'dc2.large'}
-    cluster = config['CLUSTER']
+    cluster = {'CLUSTER_TYPE': 'multi-node',
+               'NUM_NODES': '4',
+               'NODE_TYPE': 'dc2.large',
+               'CLUSTER_IDENTIFIER': 'sparkify-cluster'}
 
-    x = input("Enter a cluster identifier (default 'sparkify-cluster'): ")
-    cluster['CLUSTER_IDENTIFIER'] = x or 'sparkify-cluster'
 
-    cluster['HOST'] = ''
+    # [DB]
+    db = {'HOST': '',
+          "NAME": 'dwh',
+          "USER": 'sparkifier',
+          "PASSWORD": 'Passw0rd',
+          "PORT": '5439'}
 
-    x = input("Enter a database name (default 'dwh'): ")
-    cluster['DB_NAME'] = x or 'dwh'
-
-    x = input("Enter a database username (default 'sparkifier'): ")
-    cluster['DB_USER'] = x or 'sparkifier'
-
-    x = input("Enter a database password (default 'Passw0rd'): ")
-    cluster['DB_PASSWORD'] = x or 'Passw0rd'
-
-    cluster['DB_PORT'] = '5439'
 
     # [IAM_ROLE]
-    config['IAM_ROLE'] = {}
-    iam = config['IAM_ROLE']
-    x = input("Enter an iam['IAM'] role name (default 'sparify_redshift_role'): ")
-    iam['NAME'] = x or 'sparkify_redshift_role'
-
-    iam['ARN'] = ''
+    iam = {'NAME': 'sparkify_redshift_role',
+           'ARN': ''}
 
     # [S3]
-    config['S3'] = {'LOG_DATA': 's3://udacity-dend/log-data',
-                     'LOG_JSONPATH': 's3://udacity-dend/log_json_path.json',
-                     'SONG_DATA': 's3://udacity-dend/song-data'}
+    s3 = {'LOG_DATA': 's3://udacity-dend/log-data',
+          'LOG_JSONPATH': 's3://udacity-dend/log_json_path.json',
+          'SONG_DATA': 's3://udacity-dend/song-data'}
 
-    # Write config file
-    with open(outfile, 'w') as f:
+    if use_default == 'n':
+        print("Enter new value, or hit return to accept default.")
+
+        if x:= input("Enter a AWS region (default 'us-west-2'): "):
+            aws['REGION'] = x
+
+        if x:= input("Enter a cluster identifier (default 'sparkify-cluster'): "):
+            cluster['CLUSTER_IDENTIFIER'] = x
+
+        if x:= input("Enter a database name (default 'dwh'): "):
+            db['NAME'] = x
+
+        if x:= input("Enter a database username (default 'sparkifier'): "):
+            db['USER'] = x
+
+        if x:= input("Enter a database password (default 'Passw0rd'): "):
+            db['DB_PASSWORD'] = x
+
+        if x:= input("Enter an iam['IAM'] role name (default 'sparify_redshift_role'): "):
+            iam['NAME'] = x
+
+
+    # Create config file
+    config = configparser.ConfigParser()
+    config['AWS'] = aws
+    config['CLUSTER'] = cluster
+    config['DB'] = db
+    config['IAM_ROLE'] = iam
+    config['S3'] = s3
+
+    with open(OUT_FILE, 'w') as f:
         config.write(f)
 
 
