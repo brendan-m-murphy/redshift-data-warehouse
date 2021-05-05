@@ -1,7 +1,6 @@
 """
 Provides a class for creating and interacting with a Redshift cluster
 """
-import boto3
 import configparser
 from . import utils
 
@@ -10,6 +9,16 @@ class Cluster():
     """Creates and manages a Redshift cluster
     """
     def __init__(self):
+        """Creates a Cluster instance.
+
+        A Cluster object can:
+        - create the dwh cluster
+        - return or print the cluster's properties
+        - pause or resume the cluster
+
+        :returns:
+
+        """
         self.client = utils.get_client('redshift')
         self.resource = utils.get_resource('redshift')
         self.config = utils.get_cluster_config()
@@ -37,27 +46,27 @@ class Cluster():
 
 
     def create(self):
-    """Create a redshift cluster based on info in dwh.cfg
+        """Create a redshift cluster based on info in dwh.cfg
 
-    :returns: response to redshift client create_cluster method
+        :returns: response to redshift client create_cluster method
 
-    """
-    if not self.role_arn:
-        _, arn = utils.get_role_name_arn()
-        self.set_role_arn(arn)  # raises ValueError if arn is not set
+        """
+        if not self.role_arn:
+            _, arn = utils.get_role_name_arn()
+            self.set_role_arn(arn)  # raises ValueError if arn is not set
 
-    response = self.client.create_cluster(
-        DBName = self.db_config['NAME'],
-        ClusterIdentifier = self.config['CLUSTER_IDENTIFIER'],
-        ClusterType = self.config['CLUSTER_TYPE'],
-        NodeType = self.config['NODE_TYPE'],
-        MasterUsername = self.db_config['USER'],
-        MasterUserPassword = self.db_config['PASSWORD'],
-        Port = int(self.db_config['PORT']),
-        NumberOfNodes = int(self.config['NUM_NODES']),
-        IamRoles = [self.role_arn]
-    )
-    return response
+        response = self.client.create_cluster(
+            DBName = self.db_config['NAME'],
+            ClusterIdentifier = self.config['CLUSTER_IDENTIFIER'],
+            ClusterType = self.config['CLUSTER_TYPE'],
+            NodeType = self.config['NODE_TYPE'],
+            MasterUsername = self.db_config['USER'],
+            MasterUserPassword = self.db_config['PASSWORD'],
+            Port = int(self.db_config['PORT']),
+            NumberOfNodes = int(self.config['NUM_NODES']),
+            IamRoles = [self.role_arn]
+        )
+        return response
 
 
     def properties(self):
@@ -77,6 +86,12 @@ class Cluster():
         print('\nCluster properties:\n')
         for k in keys:
             print(f'{k:<20}{properties[k]}')
+
+
+    def status(self):
+        """Return cluster status
+        """
+        return self.properties()['ClusterStatus']
 
 
     def pause(self):
@@ -118,22 +133,26 @@ class Cluster():
         print("* Cluster available")
 
 
-    def write_host_to_cfg():
+    def write_host_to_cfg(self):
         """Write the cluster endpoint address to HOST in dwh.cfg
+
+        Run this after the cluster is first available to record the DB
+        host address, which is needed for creating a connection to the DB.
+
         """
         host = self.properties()['Endpoint']['Address']
 
         config = configparser.ConfigParser()
         config.read('dwh.cfg')
         config.set('CLUSTER', 'HOST', host)
-        with open('dwh.cfg', 'w') as f:
+        with open(utils.CFG_PATH, 'w') as f:
                 config.write(f)
 
 
-    def open_tpc():
+    def open_tpc(self):
         """Open an incoming TCP port to access the cluster endpoint
 
-        :returns: None
+        The cluster must be available before this is run.
 
         """
         ec2 = utils.get_resource('ec2')

@@ -1,5 +1,4 @@
-import psycopg2
-import aws_utils
+from src import cluster, psql
 from sql_queries import create_table_queries, drop_table_queries
 
 
@@ -16,12 +15,13 @@ def create_tables(cur, conn):
 
 
 def main():
+    cluster = cluster.Cluster()
+    if cluster.status() == 'paused':
+        cluster.resume()
+        cluster.wait()
 
-    if aws_utils.redshift_properties()['ClusterStatus'] == 'paused':
-        aws_utils.resume_cluster()
-        aws_utils.wait_for_cluster_available()
-
-    with aws_utils.get_connection() as conn:
+    db = psql.RedshiftDatabase()
+    with db.connect() as conn:
         with conn.cursor() as cur:
             drop_tables(cur, conn)
             create_tables(cur, conn)

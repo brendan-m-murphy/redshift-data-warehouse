@@ -1,17 +1,20 @@
 #!/usr/bin/env python3
 import boto3
 import configparser
+from pathlib import Path
 
+
+CFG_PATH = Path.cwd().parent / 'dwh.cfg'
 
 # configs
 def get_auth():
-    """Extract auth and region info from 'dwh.cfg'
+    """Extract auth and region info from CFG_PATH
 
     :returns: Dict containing auth and region info
 
     """
     config = configparser.ConfigParser()
-    config.read_file(open('dwh.cfg'))
+    config.read_file(open(CFG_PATH))
 
     return dict(KEY=config.get('AWS', 'KEY'),
                 SECRET=config.get('AWS', 'SECRET'),
@@ -19,13 +22,13 @@ def get_auth():
 
 
 def get_cluster_config():
-    """Extract cluster config info from 'dwh.cfg'
+    """Extract cluster config info from CFG_PATH
 
     :returns: Dict containing cluster config
 
     """
     config = configparser.ConfigParser()
-    config.read_file(open('dwh.cfg'))
+    config.read_file(open(CFG_PATH))
 
     return dict(CLUSTER_TYPE=config.get("CLUSTER","CLUSTER_TYPE"),
                 NUM_NODES=config.get("CLUSTER","NUM_NODES"),
@@ -35,7 +38,7 @@ def get_cluster_config():
 
 def get_db_config():
     config = configparser.ConfigParser()
-    config.read_file(open('dwh.cfg'))
+    config.read_file(open(CFG_PATH))
     return dict(NAME=config.get("DB","NAME"),
                 USER=config.get("DB","USER"),
                 PASSWORD=config.get("DB","PASSWORD"),
@@ -44,13 +47,13 @@ def get_db_config():
 
 
 def get_s3_config():
-    """Extract s3 bucket paths from 'dwh.cfg'
+    """Extract s3 bucket paths from CFG_PATH
 
     :returns: Dict containing paths for s3 buckets and JSONPath files
 
     """
     config = configparser.ConfigParser()
-    config.read_file(open('dwh.cfg'))
+    config.read_file(open(CFG_PATH))
 
     return dict(LOG_DATA = config.get("S3", "LOG_DATA"),
                 LOG_JSONPATH = config.get("S3", "LOG_JSONPATH"),
@@ -64,7 +67,7 @@ def get_role_name_arn():
 
     """
     config = configparser.ConfigParser()
-    config.read_file(open('dwh.cfg'))
+    config.read_file(open(CFG_PATH))
 
     return config.get("IAM_ROLE", "NAME"), config.get("IAM_ROLE", "ARN")
 

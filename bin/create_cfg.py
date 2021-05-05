@@ -4,7 +4,7 @@
 Optional argument: output file name. Default is 'dwh.cfg'.
 
 How to use this script:
-- download admin credentials as a csv file 'new_user_credentials.csv'
+- download admin credentials as a csv file (default: 'new_user_credentials.csv')
 - run the script
 - if you don't specify an output filename, dwh.cfg will be used, possibly
   over-writing the existing config, which would delete the role arn and

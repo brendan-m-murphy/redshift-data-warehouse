@@ -15,18 +15,12 @@ of the data.
 """
 import psycopg2
 import sys
-import aws_utils
+from src import psql
 from sql_queries import copy_table_queries, insert_table_queries, test_copy_table_queries
 
 
 def load_staging_tables(cur, conn):
     for query in reversed(copy_table_queries):
-        cur.execute(query)
-        conn.commit()
-
-
-def insert_tables(cur, conn):
-    for query in insert_table_queries:
         cur.execute(query)
         conn.commit()
 
@@ -37,8 +31,19 @@ def test_load_staging_tables(cur, conn):
         conn.commit()
 
 
-def full_etl():
-    with aws_utils.get_connection() as conn:
+def insert_tables(cur, conn):
+    for query in insert_table_queries:
+        cur.execute(query)
+        conn.commit()
+
+
+def full_etl(db):
+    """Run ETL on all JSON data
+
+    :param db: RedshiftDatabase object (from src.psql)
+
+    """
+    with db.connect() as conn:
         with conn.cursor() as cur:
             print('* Loading staging tables (all data)')
             load_staging_tables(cur, conn)
@@ -46,8 +51,13 @@ def full_etl():
             insert_tables(cur, conn)
 
 
-def test_etl():
-    with aws_utils.get_connection() as conn:
+def test_etl(db):
+    """Run ETL on small subset of JSON data
+
+    :param db: RedshiftDatabase object (from src.psql)
+
+    """
+    with db.connect() as conn:
         with conn.cursor() as cur:
             print('* Loading staging tables (test data)')
             test_load_staging_tables(cur, conn)
@@ -56,17 +66,18 @@ def test_etl():
 
 
 def main(*args):
+    db = psql.RedshiftDatabase()
     if len(args) == 1:
         answer = input("Do you want to load all of the data, a test set, or quit? [all/test/quit] ")
         if answer == 'all':
-            full_etl()
+            full_etl(db)
         elif answer == 'test':
-            test_etl()
+            test_etl(db)
     elif len(args) == 2:
         if args[1] == 'all':
-            full_etl()
+            full_etl(db)
         elif args[1] == 'test':
-            test_etl()
+            test_etl(db)
         else:
             raise Exception("Invalid argument. Valid arguments are 'test' or 'all'.")
     else:

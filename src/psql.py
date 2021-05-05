@@ -74,7 +74,7 @@ class RedshiftDatabase():
         from stl_loaderror_detail d, stl_load_errors le
         where d.query = le.query;
         """
-        execute_print(query, format=lambda x: format(*tuple(x)))
+        self.execute_print(query, format=lambda x: format(*tuple(x)))
 
 
 

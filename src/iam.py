@@ -1,7 +1,6 @@
 """
 Class for role creation and management.
 """
-import boto3
 import configparser
 import json
 from . import utils
@@ -9,13 +8,22 @@ from . import utils
 
 class RedshiftRole():
     """Creates and manages IAM role for Redshift cluster
+
+    Typical usage:
+    - create instance: `role = RedshiftRole()`
+    - create role: `role.create()`
+    - wait for the role: `role.wait_for_role()`
+    - record the role arn: `role.write_arn_to_cfg()`
+    - add s3 read policy: `role.allow_read_access()`
+    - wait for policy: `role.wait_for_policy()`
+
+
     """
     def __init__(self):
         name, arn = utils.get_role_name_arn()
         self.name = name
         self.arn = arn
         self.client = utils.get_client('iam')
-        self.resource = utils.get_resource('iam')
         self.read_policy_arn = "arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess"
 
 
