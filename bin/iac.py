@@ -1,4 +1,10 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
+"""
+Script to setup AWS infrastructure.
+
+Creates an IAM role to give the cluster s3 read access,
+then creates the cluster itself.
+"""
 from src import cluster, iam
 
 
