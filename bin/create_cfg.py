@@ -18,7 +18,6 @@ defaults at your own risk.
 import argparse
 import configparser
 import csv
-import sys
 
 
 def main():

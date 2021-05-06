@@ -25,8 +25,5 @@ setup(
             'cleanup=bin.status:cleanup',
             'analytics=bin.analytics:main'
         ]
-    },
-    package_data = {
-        "project3": ["src/cfg/dwh.cfg"]
     }
 )
