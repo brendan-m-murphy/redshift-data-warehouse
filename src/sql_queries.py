@@ -1,13 +1,13 @@
-import aws_utils
+from src import utils
 
 
 # CONFIG
-config = aws_utils.get_s3_config()
+config = utils.get_s3_config()
 LOG_DATA = config['LOG_DATA']
 LOG_JSONPATH = config['LOG_JSONPATH']
 SONG_DATA = config['SONG_DATA']
 
-_, IAM_ARN = aws_utils.get_role_name_arn()
+_, IAM_ARN = utils.get_role_name_arn()
 
 # DROP TABLES
 
@@ -215,6 +215,6 @@ LIMIT 1;
 
 create_table_queries = [staging_events_table_create, staging_songs_table_create, songplay_table_create, user_table_create, song_table_create, artist_table_create, time_table_create]
 drop_table_queries = [staging_events_table_drop, staging_songs_table_drop, songplay_table_drop, user_table_drop, song_table_drop, artist_table_drop, time_table_drop]
-copy_table_queries = [staging_events_copy, staging_songs_copy]
-test_copy_table_queries = [test_staging_events_copy, test_staging_songs_copy]
+copy_table_queries = [staging_songs_copy, staging_events_copy]
+test_copy_table_queries = [test_staging_songs_copy, test_staging_events_copy]
 insert_table_queries = [songplay_table_insert, user_table_insert, song_table_insert, artist_table_insert, time_table_insert]

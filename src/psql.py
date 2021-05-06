@@ -2,7 +2,7 @@
 Functions for querying Redshift DB
 """
 import psycopg2
-from . import utils
+from src import utils
 
 class RedshiftDatabase():
     def __init__(self):

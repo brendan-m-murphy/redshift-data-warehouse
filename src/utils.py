@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 import boto3
 import configparser
-from pathlib import Path
 
 
-CFG_PATH = Path.cwd().parent / 'dwh.cfg'
+CFG_PATH = 'src/cfg/dwh.cfg'
 
 # configs
 def get_auth():

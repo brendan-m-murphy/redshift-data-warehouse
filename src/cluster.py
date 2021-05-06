@@ -2,7 +2,7 @@
 Provides a class for creating and interacting with a Redshift cluster
 """
 import configparser
-from . import utils
+from src import utils
 
 
 class Cluster():
@@ -20,9 +20,9 @@ class Cluster():
 
         """
         self.client = utils.get_client('redshift')
-        self.resource = utils.get_resource('redshift')
         self.config = utils.get_cluster_config()
         self.db_config = utils.get_db_config()
+        self.cfg_path = utils.CFG_PATH
 
         _, arn = utils.get_role_name_arn()
         if not arn:
@@ -55,18 +55,22 @@ class Cluster():
             _, arn = utils.get_role_name_arn()
             self.set_role_arn(arn)  # raises ValueError if arn is not set
 
-        response = self.client.create_cluster(
-            DBName = self.db_config['NAME'],
-            ClusterIdentifier = self.config['CLUSTER_IDENTIFIER'],
-            ClusterType = self.config['CLUSTER_TYPE'],
-            NodeType = self.config['NODE_TYPE'],
-            MasterUsername = self.db_config['USER'],
-            MasterUserPassword = self.db_config['PASSWORD'],
-            Port = int(self.db_config['PORT']),
-            NumberOfNodes = int(self.config['NUM_NODES']),
-            IamRoles = [self.role_arn]
-        )
-        return response
+        try:
+            response = self.client.create_cluster(
+                DBName = self.db_config['NAME'],
+                ClusterIdentifier = self.config['CLUSTER_IDENTIFIER'],
+                ClusterType = self.config['CLUSTER_TYPE'],
+                NodeType = self.config['NODE_TYPE'],
+                MasterUsername = self.db_config['USER'],
+                MasterUserPassword = self.db_config['PASSWORD'],
+                Port = int(self.db_config['PORT']),
+                NumberOfNodes = int(self.config['NUM_NODES']),
+                IamRoles = [self.role_arn]
+            )
+        except self.client.exceptions.ClusterAlreadyExistsFault:
+            print(f"Cluster {self.config['CLUSTER_IDENTIFIER']} already exists.")
+        else:
+            return response
 
 
     def properties(self):
@@ -95,7 +99,13 @@ class Cluster():
 
 
     def pause(self):
-        "Pause redshift cluster"
+        """Pause redshift cluster
+
+        The cluster cannot be paused without an initial snapshot,
+        so this method creates a snapshot, if none exist, before
+        pausing.
+
+        """
         ci = self.config["CLUSTER_IDENTIFIER"]
         try:
             response = self.client.pause_cluster(ClusterIdentifier=ci)
@@ -143,9 +153,9 @@ class Cluster():
         host = self.properties()['Endpoint']['Address']
 
         config = configparser.ConfigParser()
-        config.read('dwh.cfg')
-        config.set('CLUSTER', 'HOST', host)
-        with open(utils.CFG_PATH, 'w') as f:
+        config.read(self.cfg_path)
+        config.set('DB', 'HOST', host)
+        with open(self.cfg_path, 'w') as f:
                 config.write(f)
 
 

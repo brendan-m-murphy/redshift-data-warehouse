@@ -1,9 +1,11 @@
 """
 Class for role creation and management.
 """
+import boto3
+import botocore
 import configparser
 import json
-from . import utils
+from src import utils
 
 
 class RedshiftRole():
@@ -25,6 +27,7 @@ class RedshiftRole():
         self.arn = arn
         self.client = utils.get_client('iam')
         self.read_policy_arn = "arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess"
+        self.cfg_path = utils.CFG_PATH
 
 
     def create(self):
@@ -47,14 +50,13 @@ class RedshiftRole():
                 }
             ]
         }
-        iam = utils.get_client('iam')
         try:
             response = self.client.create_role(
                 RoleName = self.name,
                 AssumeRolePolicyDocument = json.dumps(policy),
                 Description = "Allow s3 read-only access for Redshift"
             )
-        except iam.exceptions.EntityAlreadyExistsException:
+        except self.client.exceptions.EntityAlreadyExistsException:
             print(f"IAM role {self.name} already exists.")
         else:
             return response
@@ -91,14 +93,14 @@ class RedshiftRole():
         arn = response['Role']['Arn']
 
         config = configparser.ConfigParser()
-        config.read(utils.CFG_PATH)
+        config.read(self.cfg_path)
         config.set('IAM_ROLE', 'ARN', arn)
-        with open(utils.CFG_PATH, 'w') as f:
+        with open(self.cfg_path, 'w') as f:
             config.write(f)
 
 
     def delete(self):
-        """Delete an IAM role.
+        """Delete the redshift role.
 
         TODO implement
 

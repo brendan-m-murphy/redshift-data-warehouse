@@ -15,23 +15,27 @@ Warning: this script does not perform input validation, so modify the
 defaults at your own risk.
 
 """
+import argparse
 import configparser
 import csv
 import sys
 
 
-def main(*args):
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-i', '--input',
+                        help="Specify input .csv file with AWS credentials (column 2 = KEY, column 3 = SECRET)")
+    args = parser.parse_args()
+
+    OUT_FILE = 'src/cfg/dwh.cfg'
+    if args.input:
+        CRED_FILE = args.input
+    else:
+        CRED_FILE = 'new_user_credentials.csv'
+
     use_default = input("Use default parameters? [y/n] ")
     while use_default not in ['y', 'n']:
         use_default = input("Enter 'y' or 'n': ")
-
-    OUT_FILE = 'dwh.cfg'
-    CRED_FILE = 'new_user_credentials.csv'
-    for arg in args:
-        if arg.endswith('.cfg'):
-            OUT_FILE = arg
-        elif arg.endswith('.csv'):
-            CRED_FILE = arg
 
 
     # [AWS]
@@ -106,4 +110,4 @@ def main(*args):
 
 
 if __name__ == '__main__':
-    main(*sys.argv)
+    main()

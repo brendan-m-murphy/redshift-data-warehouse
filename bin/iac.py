@@ -14,16 +14,16 @@ def main():
     role.wait_for_policy()
 
     print('* Launching Redshift cluster')
-    cluster = cluster.Cluster()
-    cluster.create()
-    cluster.wait()
+    new_cluster = cluster.Cluster()
+    new_cluster.create()
+    new_cluster.wait()
     print('* Recording cluster endpoint')
-    cluster.write_host_to_cfg()
+    new_cluster.write_host_to_cfg()
     print('* Opening TCP connection')
-    cluster.open_tpc()
+    new_cluster.open_tpc()
 
     print('* Infrastructure set-up complete.')
-    cluster.summary()
+    new_cluster.summary()
 
 
 

@@ -5,28 +5,27 @@ then populates a star schema from the
 staging tables.
 
 Optional arguements:
-- `test`: run on restricted set of data
-- `all`: run on full set of data without prompt
+- -t: run on restricted set of data
+- -f: run on full set of data without prompt
 
 If no optional arguments are present, you will
 be asked to confirm that you wish to load *all*
 of the data.
 
 """
-import psycopg2
-import sys
+import argparse
 from src import psql
-from sql_queries import copy_table_queries, insert_table_queries, test_copy_table_queries
+from src.sql_queries import copy_table_queries, insert_table_queries, test_copy_table_queries
 
 
 def load_staging_tables(cur, conn):
-    for query in reversed(copy_table_queries):
+    for query in copy_table_queries:
         cur.execute(query)
         conn.commit()
 
 
 def test_load_staging_tables(cur, conn):
-    for query in reversed(test_copy_table_queries):
+    for query in test_copy_table_queries:
         cur.execute(query)
         conn.commit()
 
@@ -65,25 +64,26 @@ def test_etl(db):
             insert_tables(cur, conn)
 
 
-def main(*args):
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-t', '--test', help="load subset of data",
+                        action="store_true")
+    parser.add_argument('-y', '--yes', help="skip y/n prompt",
+                        action="store_true")
+    args = parser.parse_args()
     db = psql.RedshiftDatabase()
-    if len(args) == 1:
-        answer = input("Do you want to load all of the data, a test set, or quit? [all/test/quit] ")
-        if answer == 'all':
-            full_etl(db)
-        elif answer == 'test':
-            test_etl(db)
-    elif len(args) == 2:
-        if args[1] == 'all':
-            full_etl(db)
-        elif args[1] == 'test':
-            test_etl(db)
-        else:
-            raise Exception("Invalid argument. Valid arguments are 'test' or 'all'.")
-    else:
-        raise Exception("Too many arguments. Valid arguments are 'test' or 'all'.")
 
+    if args.test:
+        test_etl(db)
+    elif args.yes:
+        full_etl(db)
+    else:
+        x = input("Do you want to load *all* of the data? [y/n] ")
+        if x == 'y':
+            full_etl(db)
+        else:
+            print("Run `etl -t` to load only the test data.")
 
 
 if __name__ == "__main__":
-    main(*sys.argv)
+    main()

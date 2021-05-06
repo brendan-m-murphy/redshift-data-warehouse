@@ -11,14 +11,19 @@ setup(
     description= 'Creating a data warehouse with Amazon Redshift.',
     author = 'Brendan Murphy',
     url = 'https://github.com/brendan-m-murphy/udacity-dend-project-3',
-    packages = find_packages(include=['src', 'src.*', 'bin', 'bin.*']),
+    packages = find_packages(include=['src', 'src.*']),
     install_requires = REQUIRE,
     entry_points = {
         'console_scripts': [
             'config=bin.create_cfg:main',
             'create-tables=bin.create_tables:main',
             'etl=bin.etl:main',
-            'iac=bin.iac:main'
+            'iac=bin.iac:main',
+            'pause=bin.status:pause',
+            'resume=bin.status:resume',
+            'status=bin.status:status',
+            'delete=bin.status:delete',
+            'analytics=bin.analytics:main'
         ]
     }
 )
