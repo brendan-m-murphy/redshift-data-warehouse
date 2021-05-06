@@ -18,6 +18,7 @@ defaults at your own risk.
 import argparse
 import configparser
 import csv
+import os
 
 
 def main():
@@ -27,6 +28,8 @@ def main():
     args = parser.parse_args()
 
     OUT_FILE = 'src/cfg/dwh.cfg'
+    os.makedirs(os.path.dirname(OUT_FILE), exist_ok=True)
+
     if args.input:
         CRED_FILE = args.input
     else:
