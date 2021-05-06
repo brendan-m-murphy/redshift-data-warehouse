@@ -1,6 +1,8 @@
 """
 Provides a class for creating and interacting with a Redshift cluster
 """
+import boto3
+import botocore
 import configparser
 from src import utils
 
@@ -171,13 +173,18 @@ class Cluster():
         default_sg = list(vpc.security_groups.all())[0]
         PORT = self.db_config['PORT']
 
-        default_sg.authorize_ingress(
-            GroupName = default_sg.group_name,
-            CidrIp = "0.0.0.0/0",
-            IpProtocol = "TCP",
-            FromPort = int(PORT),
-            ToPort = int(PORT)
-        )
+        try:
+            default_sg.authorize_ingress(
+                GroupName = default_sg.group_name,
+                CidrIp = "0.0.0.0/0",
+                IpProtocol = "TCP",
+                FromPort = int(PORT),
+                ToPort = int(PORT)
+            )
+        except botocore.exceptions.ClientError as e:
+            code = e.response['Error']['Code']
+            if code != 'InvalidPermission.Duplicate':
+                raise e
 
 
     def delete(self):
