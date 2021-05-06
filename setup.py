@@ -22,7 +22,7 @@ setup(
             'pause=bin.status:pause',
             'resume=bin.status:resume',
             'status=bin.status:status',
-            'delete=bin.status:delete',
+            'cleanup=bin.status:cleanup',
             'analytics=bin.analytics:main'
         ]
     }

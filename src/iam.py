@@ -27,6 +27,7 @@ class RedshiftRole():
         self.name = name
         self.arn = arn
         self.client = utils.get_client('iam')
+        self.resource = utils.get_resource('iam')
         self.read_policy_arn = "arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess"
         self.cfg_path = utils.CFG_PATH
 
@@ -107,15 +108,24 @@ class RedshiftRole():
         using the role has been deleted.
 
         """
-        self.client.delete_policy(PolicyArn=self.read_policy_arn)
-        for n in range(30):
-            policy_attached = self.client.get_policy(PolicyArn=self.read_policy_arn)['Policy']['IsAttached']
-            if policy_attached:
-                if n < 30:
-                    time.sleep(30)
-                else:
-                    raise Exception('Policy took too long to detach.')
+        policy = self.resource.Policy(self.read_policy_arn)
+        try:
+            policy.detach_role(RoleName=self.name)
+        except botocore.exceptions.ClientError as e:
+            if e.response['Error']['Code'] == 'NoSuchEntity':
+                print('* Policy detached.')
             else:
-                break
+                raise e
+        else:
+            print('* Waiting for s3 read access policy to detach...')
+            for n in range(31):
+                if self.name in [x.name for x in policy.attached_roles.all()]:
+                    if n < 30:
+                        time.sleep(30)
+                    else:
+                        raise Exception('Policy took too long to detach.')
+                else:
+                    break
 
-        self.client.delete_role(self.name)
+        print('* Deleting role...')
+        self.client.delete_role(RoleName=self.name)

@@ -178,3 +178,17 @@ class Cluster():
             FromPort = int(PORT),
             ToPort = int(PORT)
         )
+
+
+    def delete(self):
+        ci = self.config['CLUSTER_IDENTIFIER']
+        try:
+            self.client.delete_cluster(ClusterIdentifier=ci,
+                                       SkipFinalClusterSnapshot=True)
+        except self.client.exceptions.ClusterNotFoundFault:
+            print('* Cluster not found. It may have already been deleted.')
+        else:
+            print('* Waiting until cluster deleted...')
+            waiter = self.client.get_waiter('cluster_deleted')
+            waiter.wait(ClusterIdentifier=ci)
+            print('* Cluster deleted')
