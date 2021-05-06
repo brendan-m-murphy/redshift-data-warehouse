@@ -11,7 +11,7 @@ setup(
     description= 'Creating a data warehouse with Amazon Redshift.',
     author = 'Brendan Murphy',
     url = 'https://github.com/brendan-m-murphy/udacity-dend-project-3',
-    packages = find_packages(include=['src', 'src.*']),
+    packages = find_packages(include=['src', 'src.*', 'bin', 'bin.*']),
     install_requires = REQUIRE,
     entry_points = {
         'console_scripts': [
