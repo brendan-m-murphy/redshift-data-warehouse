@@ -34,7 +34,7 @@ The points of the star schema ("dimension tables") are:
 # Usage
 
 1. Create an AWS user with admin privileges and download the credentials as a .csv
-2. Run `pip install -e git+https://github.com/brendan-m-murphy/udacity-dend-project-3.git` to install a local copy of the project. 
+2. Run `pip install -e git+https://github.com/brendan-m-murphy/udacity-dend-project-3.git#egg=project3` to install a local copy of the project. 
 3. Run `config` to create `dwh.cfg`
 4. Run `iac` to create a Redshift role and cluster.
 5. Run `create-tables` to create tables for staging and the star schema.
