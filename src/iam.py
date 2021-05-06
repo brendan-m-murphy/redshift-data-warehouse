@@ -5,6 +5,7 @@ import boto3
 import botocore
 import configparser
 import json
+import time
 from src import utils
 
 
@@ -102,12 +103,19 @@ class RedshiftRole():
     def delete(self):
         """Delete the redshift role.
 
-        TODO implement
-
-        Needs to remove policies before deleting.
-        Need policy ARNs to do so.
-
-        :returns:
+        Only delete a role *after* the Redshift cluster
+        using the role has been deleted.
 
         """
-        pass
+        self.client.delete_policy(PolicyArn=self.read_policy_arn)
+        for n in range(30):
+            policy_attached = self.client.get_policy(PolicyArn=self.read_policy_arn)['Policy']['IsAttached']
+            if policy_attached:
+                if n < 30:
+                    time.sleep(30)
+                else:
+                    raise Exception('Policy took too long to detach.')
+            else:
+                break
+
+        self.client.delete_role(self.name)

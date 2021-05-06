@@ -139,7 +139,7 @@ class QueryMenu():
             tbl.add_rows(rows)
 
             print('\n')
-            print(tbl)
+            print(tbl, '\n')
 
 
 def main():
@@ -149,6 +149,7 @@ def main():
     qm = QueryMenu(queries)
     qm.list_queries()
 
+    print('\n')
     i = input("Enter the number of the desired query: ")
     qm.execute_query(int(i))
 
