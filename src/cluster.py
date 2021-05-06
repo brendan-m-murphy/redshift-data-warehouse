@@ -181,6 +181,8 @@ class Cluster():
 
 
     def delete(self):
+        """Delete the Redshift cluster
+        """
         ci = self.config['CLUSTER_IDENTIFIER']
         try:
             self.client.delete_cluster(ClusterIdentifier=ci,

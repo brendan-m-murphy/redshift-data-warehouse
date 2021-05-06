@@ -48,6 +48,16 @@ class RedshiftDatabase():
 
 
     def execute_print(self, query, limit=None, format=lambda x: x):
+        """Execute a query and print the results
+
+        Note: limit affects how many lines are printed, but not how many
+        are returned, so it is best to include the limit in the query.
+
+        :param query: SQL query
+        :param limit: max number of lines printed
+        :param format: maps tuples from query to strings for printing
+
+        """
         with self.connect() as conn:
             with conn.cursor() as cur:
                 cur.execute(query)
@@ -63,6 +73,8 @@ class RedshiftDatabase():
 
 
     def print_load_errors(self):
+        """Prints load errors
+        """
         def format(a, b, c, d ,e):
             return f"{a:<8}{b:<23}{c:<7}{d:<19}{e:<50}"
         print(format('query', 'file', 'line', 'value', 'err_reason'))
@@ -75,24 +87,3 @@ class RedshiftDatabase():
         where d.query = le.query;
         """
         self.execute_print(query, format=lambda x: format(*tuple(x)))
-
-
-
-    def check_load_errors(self):
-        """Print last 10 load errors from stl_load_errors, with detailed info
-
-        :returns: None
-
-        """
-        query = """
-        SELECT le.starttime, d.query, d.line_number, d.colname, d.value, le.err_reason
-        FROM stl_loaderror_detail AS d
-        JOIN stl_load_errors AS le ON d.query = le.query
-        ORDER BY le.starttime DESC
-        LIMIT 10;
-        """
-        with self.connect() as conn:
-            with conn.cursor() as cur:
-                cur.execute(query)
-                for item in cur.fetchall():
-                    print(item)
