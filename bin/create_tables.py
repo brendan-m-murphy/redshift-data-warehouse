@@ -10,18 +10,40 @@ from src.sql_queries import create_table_queries, drop_table_queries
 
 
 def drop_tables(cur, conn):
+    """Run queries to drop all tables
+
+    :param cur: psycopg connection
+    :param conn: psycopg cursor
+
+    """
     for query in drop_table_queries:
         cur.execute(query)
         conn.commit()
 
 
 def create_tables(cur, conn):
+    """Run queries to create all tables
+
+    :param cur: psycopg connection
+    :param conn: psycopg cursor
+
+    """
     for query in create_table_queries:
         cur.execute(query)
         conn.commit()
 
 
 def main():
+    """Script to drop and create tables
+
+    If installed by setup.py, run on the command line
+    with `create-tables`. Otherwise, run as a python script.
+
+    If you run this script while the cluster is
+    paused, it will automatically resume the cluster
+    before running.
+
+    """
     cluster_ = cluster.Cluster()
     if cluster_.status() == 'paused':
         cluster_.resume()

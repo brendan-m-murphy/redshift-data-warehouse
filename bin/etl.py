@@ -19,18 +19,36 @@ from src.sql_queries import copy_table_queries, insert_table_queries, test_copy_
 
 
 def load_staging_tables(cur, conn):
+    """Run copy queries for staging tables.
+
+    :param cur: psycopg connection
+    :param conn: psycopg cursor
+
+    """
     for query in copy_table_queries:
         cur.execute(query)
         conn.commit()
 
 
 def test_load_staging_tables(cur, conn):
+    """Run copy queries for staging tables on small subset of data.
+
+    :param cur: psycopg connection
+    :param conn: psycopg cursor
+
+    """
     for query in test_copy_table_queries:
         cur.execute(query)
         conn.commit()
 
 
 def insert_tables(cur, conn):
+    """Run insert queries to load data into star schema
+
+    :param cur: psycopg connection
+    :param conn: psycopg cursor
+
+    """
     for query in insert_table_queries:
         cur.execute(query)
         conn.commit()
@@ -65,6 +83,19 @@ def test_etl(db):
 
 
 def main():
+    """ETL script
+
+    Run using `etl` on command line, if installed by setup.py.
+    Otherwise, run as a python script.
+
+    Optional arguments:
+    - `-t` load a small subset of data for testing
+    - `-y` run the script on the full set of data, without prompt
+
+    If run without optional arguments, you will be asked to confirm
+    that you wish to load all of the data, which could take > 4 hours.
+
+    """
     parser = argparse.ArgumentParser()
     parser.add_argument('-t', '--test', help="load subset of data",
                         action="store_true")

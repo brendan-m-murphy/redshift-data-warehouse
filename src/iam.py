@@ -65,6 +65,11 @@ class RedshiftRole():
 
 
     def wait_for_role(self):
+        """Wait for role to be created
+
+        Pauses program until redshift role is available
+
+        """
         waiter = self.client.get_waiter('role_exists')
         waiter.wait(RoleName=self.name)
 
@@ -84,6 +89,11 @@ class RedshiftRole():
 
 
     def wait_for_policy(self):
+        """Wait for s3 read access policy to be attached
+
+        Pauses program until policy is attached.
+
+        """
         waiter = self.client.get_waiter('policy_exists')
         waiter.wait(PolicyArn=self.read_policy_arn)
 

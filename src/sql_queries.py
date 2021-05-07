@@ -153,6 +153,17 @@ JSON 'auto';
 """)
 
 # FINAL TABLES
+#
+# Note: Redshift does not respect primary keys
+# so duplicates are handled by the insert statements.
+#
+# In particular, the users table contains the information
+# from the most recent event log with that user_id
+# and the artists table contains the information from
+# an arbitrary song JSON containing that artist.
+#
+# All other tables have duplicates removed by using
+# SELECT DISTINCT
 
 songplay_table_insert = """
 INSERT INTO songplays
