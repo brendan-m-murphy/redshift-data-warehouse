@@ -172,7 +172,8 @@ SELECT a, b, c, d, e FROM
   (SELECT CAST(userId AS INT) AS a, firstName AS b,
    lastName AS c, gender AS d, level AS e,
    rank() OVER (PARTITION BY userId ORDER BY ts DESC) AS rnk
-   FROM event_staging) as subquery
+   FROM event_staging
+   WHERE auth != 'Logged Out') as subquery
 WHERE rnk = 1;
 """
 
@@ -199,17 +200,6 @@ SELECT a, b, c, d, e FROM
 WHERE row_num = 1;
 """
 
-
-# TEST QUERIES
-
-# Return 1 if there are no duplicates
-max_artist_duplicates = """
-SELECT COUNT(*) as c
-FROM artists
-GROUP BY artist_id
-ORDER BY c DESC
-LIMIT 1;
-"""
 
 # QUERY LISTS
 
