@@ -114,7 +114,7 @@ class QueryMenu():
 
         """
         for i, query in enumerate(self.queries):
-            print(f"{i + 1:<5}){query.summary}")
+            print(f"{i + 1:<5}{query.summary}")
 
     def execute_query(self, i):
         """Print a query given its number as displayed
@@ -159,7 +159,7 @@ def main():
             try:
                 qm.execute_query(int(i))
             except ValueError:
-                print(f"Input 'q' or an integer from 1 to {len(qm.queries)}")
+                print(f"\nInvalid input: type 'q' or an integer from 1 to {len(qm.queries)}\n")
 
 if __name__ == '__main__':
     main()
