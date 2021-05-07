@@ -35,8 +35,8 @@ class Query():
         cols = [x.strip() for x in m.split(',')]
 
         def clean(x):
-            if 'as' in x:
-                return x.split('as')[-1].strip()
+            if 'as' in x.lower():
+                return x.lower().split('as')[-1].strip()
             elif '.' in x:
                 return x.split('.')[-1]
             else:
@@ -114,7 +114,7 @@ class QueryMenu():
 
         """
         for i, query in enumerate(self.queries):
-            print(f"{i + 1})\t{query.summary}")
+            print(f"{i + 1:<5}){query.summary}")
 
     def execute_query(self, i):
         """Print a query given its number as displayed
@@ -147,11 +147,19 @@ def main():
     to execute one.
     """
     qm = QueryMenu(queries)
-    qm.list_queries()
 
-    print('\n')
-    i = input("Enter the number of the desired query: ")
-    qm.execute_query(int(i))
+    quit = False
+    while not quit:
+        qm.list_queries()
+        print('\n')
+        i = input("Enter the query number (q to quit): ")
+        if i == 'q':
+            quit = True
+        else:
+            try:
+                qm.execute_query(int(i))
+            except ValueError:
+                print(f"Input 'q' or an integer from 1 to {len(qm.queries)}")
 
 if __name__ == '__main__':
     main()
