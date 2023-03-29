@@ -192,7 +192,7 @@ time_table_insert = """
 INSERT INTO time (start_time, hour, day, week, month, year, weekday)
 SELECT DISTINCT ts, date_part(h, ts), date_part(d, ts), date_part(w, ts),
 date_part(mon, ts), date_part(y, ts), (CASE WHEN date_part(dow, ts) BETWEEN 1 AND 5 THEN true ELSE false END)
-FROM event_staging as e;
+FROM event_staging;
 """
 
 song_table_insert = """

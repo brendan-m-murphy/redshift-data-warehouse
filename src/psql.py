@@ -7,7 +7,7 @@ from src import utils
 class RedshiftDatabase():
     def __init__(self):
         self.config = utils.get_db_config()
-        # TODO track connections?
+
 
     def connect(self):
         """Get connection to Postgres database on Redshift cluster
