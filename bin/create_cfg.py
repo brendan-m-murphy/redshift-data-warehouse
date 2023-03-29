@@ -39,7 +39,6 @@ def main():
     while use_default not in ['y', 'n']:
         use_default = input("Enter 'y' or 'n': ")
 
-
     # [AWS]
     aws = {'REGION': 'us-west-2'}
 
@@ -47,11 +46,11 @@ def main():
     # assuming default aws columns
     with open(CRED_FILE, 'r', newline='') as f:
         reader = csv.reader(f, delimiter=',')
-        next(reader)
-        row = next(reader)
-        aws['KEY'] = row[2]
-        aws['SECRET'] = row[3]
-
+        cols = next(reader)
+        row1 = next(reader)
+        cred_dict = {k: v for k in cols for v in row1}
+        aws['KEY'] = cred_dict["Access key ID"]
+        aws['SECRET'] = cred_dict["Secret access key"]
 
     # [CLUSTER]
     cluster = {'CLUSTER_TYPE': 'multi-node',
@@ -59,14 +58,12 @@ def main():
                'NODE_TYPE': 'dc2.large',
                'CLUSTER_IDENTIFIER': 'sparkify-cluster'}
 
-
     # [DB]
     db = {'HOST': '',
           "NAME": 'dwh',
           "USER": 'sparkifier',
           "PASSWORD": 'Passw0rd',
           "PORT": '5439'}
-
 
     # [IAM_ROLE]
     iam = {'NAME': 'sparkify_redshift_role',
@@ -80,24 +77,23 @@ def main():
     if use_default == 'n':
         print("Enter new value, or hit return to accept default.")
 
-        if x:= input("Enter a AWS region (default 'us-west-2'): "):
+        if x := input("Enter a AWS region (default 'us-west-2'): "):
             aws['REGION'] = x
 
-        if x:= input("Enter a cluster identifier (default 'sparkify-cluster'): "):
+        if x := input("Enter a cluster identifier (default 'sparkify-cluster'): "):
             cluster['CLUSTER_IDENTIFIER'] = x
 
-        if x:= input("Enter a database name (default 'dwh'): "):
+        if x := input("Enter a database name (default 'dwh'): "):
             db['NAME'] = x
 
-        if x:= input("Enter a database username (default 'sparkifier'): "):
+        if x := input("Enter a database username (default 'sparkifier'): "):
             db['USER'] = x
 
-        if x:= input("Enter a database password (default 'Passw0rd'): "):
+        if x := input("Enter a database password (default 'Passw0rd'): "):
             db['DB_PASSWORD'] = x
 
-        if x:= input("Enter an iam['IAM'] role name (default 'sparify_redshift_role'): "):
+        if x := input("Enter an iam['IAM'] role name (default 'sparify_redshift_role'): "):
             iam['NAME'] = x
-
 
     # Create config file
     config = configparser.ConfigParser()
