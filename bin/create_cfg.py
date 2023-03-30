@@ -21,6 +21,19 @@ import csv
 import os
 
 
+def read_cred_csv(cred_file):
+    """
+    Read credentials from .csv file downloaded from AWS.
+    """
+    # open with encoding utf-8-sig, incase of BOM
+    with open(cred_file, 'r', newline='', encoding='utf-8-sig') as f:
+        reader = csv.DictReader(f, delimiter=',')
+        row = next(reader)
+        key = row["Access key ID"]
+        secret = row["Secret access key"]
+    return key, secret
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-i', '--input',
@@ -43,14 +56,8 @@ def main():
     aws = {'REGION': 'us-west-2'}
 
     # read credentials from .csv file
-    # assuming default aws columns
-    with open(CRED_FILE, 'r', newline='') as f:
-        reader = csv.reader(f, delimiter=',')
-        cols = next(reader)
-        row1 = next(reader)
-        cred_dict = {k: v for k in cols for v in row1}
-        aws['KEY'] = cred_dict["Access key ID"]
-        aws['SECRET'] = cred_dict["Secret access key"]
+    aws['SECRET'] = cred_dict["Secret access key"]
+    aws['KEY'], aws['SECRET'] = read_cred_csv(CRED_FILE)
 
     # [CLUSTER]
     cluster = {'CLUSTER_TYPE': 'multi-node',
