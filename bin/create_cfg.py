@@ -56,7 +56,6 @@ def main():
     aws = {'REGION': 'us-west-2'}
 
     # read credentials from .csv file
-    aws['SECRET'] = cred_dict["Secret access key"]
     aws['KEY'], aws['SECRET'] = read_cred_csv(CRED_FILE)
 
     # [CLUSTER]
