@@ -7,7 +7,7 @@ with open('requirements.txt', 'r') as f:
 
 
 setup(
-    name = 'project3',
+    name = 'redshift-data-warehouse',
     description= 'Creating a data warehouse with Amazon Redshift.',
     author = 'Brendan Murphy',
     url = 'https://github.com/brendan-m-murphy/udacity-dend-project-3',
