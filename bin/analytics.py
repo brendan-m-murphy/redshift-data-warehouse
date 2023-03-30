@@ -98,13 +98,16 @@ class QueryMenu():
     """Class to hold a list of queries, display the list,
     and print the queries based on list index (starting at 1).
     """
-    def __init__(self, queries=[]):
+    def __init__(self, queries=None):
         """Construtor
 
         :param queries: list of Query objects
 
         """
-        self.queries = queries
+        if queries is None:
+            queries = []
+        else:
+            self.queries = queries
         self.db = psql.RedshiftDatabase()
 
     def list_queries(self):

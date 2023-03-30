@@ -111,7 +111,7 @@ class Cluster():
         ci = self.config["CLUSTER_IDENTIFIER"]
         try:
             response = self.client.pause_cluster(ClusterIdentifier=ci)
-        except client.exceptions.InvalidClusterStateFound:
+        except self.client.exceptions.InvalidClusterStateFound:
             print('Cluster cannot be paused because no recent backup found.\nCreating a snapshot...')
             self. client.create_cluster_snapshot(SnapshotIdentifier="pause-cluster-snap",
                                                  ClusterIdentifier=ci)
